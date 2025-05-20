@@ -4,6 +4,14 @@ import matplotlib.pyplot as plt
 import requests
 from datetime import date
 
+st.markdown("""
+    <head>
+        <meta property="og:image" content="https://iqsolar.streamlit.app/?/logo.png">
+        <meta property="og:title" content="SolarIQ>
+        <meta property="og:description" content="Estimate solar performance and carbon impact by location.">
+    </head>
+""", unsafe_allow_html=True)
+
 
 #api keys
 API_KEY_NREL = st.secrets["API_KEY_NREL"]
