@@ -126,7 +126,8 @@ def summarize_output(location, daily_kwh, annual_kwh, rate_per_kwh=0.15):
 st.set_page_config(page_title="SolarIQ", layout="wide")
 st.title("SolarIQ")
 st.subheader("Know what solar can do for you before you invest.")
-tab1, tab2 = st.tabs(["📈 Solar Performance", "📐 Solar Sizing Tool"])
+st.sidebar.image("logo.png", use_container_width=True)
+tab1, tab2, tab3 = st.tabs(["📈 Solar Performance", "📐 Solar Sizing Tool","🌍 Environmental Impact"])
 
 with tab1:
     st.sidebar.header("Solar Panel Inputs")
@@ -156,7 +157,7 @@ with tab1:
         daily_kwh = result['total_production'] / 1000
         annual_kwh = daily_kwh * 365
 
-        # ✍️ Quick one-line evaluation
+        #Quick one-line evaluation
         if annual_kwh >= 3000:
             st.success("👍 Based on your data, solar investment looks highly beneficial.")
         elif annual_kwh >= 900:
@@ -164,7 +165,7 @@ with tab1:
         else:
             st.warning("👎 Solar may offer limited savings at this location with current solar panel technology.")
 
-        # 🧠 Optional detailed analysis
+        #Optional detailed analysis
         if st.checkbox("Show detailed performance evaluation"):
             evaluation = summarize_output(location, daily_kwh, annual_kwh)
             st.text(evaluation)
@@ -233,3 +234,41 @@ with tab2:
         st.markdown(f"-  **Weather-Based Estimate** at {temperature:.1f}°C")
 
         st.info("This is a sizing estimate. Actual installation may vary based on roof shape, shading, and system losses.")
+with tab3:
+    st.header("🌱 Environmental Impact")
+
+    location_env = st.text_input("City Name:", key="env_location")
+
+    if location_env:
+        coords = get_coordinates_from_city(location_env)
+        if not coords:
+            st.error("No matching city found. Please enter a valid U.S. city name.")
+            st.stop()
+
+        ghi_daily = fetch_daily_irradiance(location_env)
+        if ghi_daily is None:
+            st.error("Failed to retrieve irradiance data.")
+            st.stop()
+
+        temperature = fetch_tomorrow_temperature(location_env)
+
+        efficiency = st.slider("Cell Efficiency (%)", 5, 30, 20, key="env_eff") / 100
+        area = st.number_input("Panel Area (m²)", min_value=0.1, value=2.0, step=0.1, key="env_area")
+        tilt = st.slider("Tilt Angle (degrees)", 0, 90, 30, key="env_tilt")
+
+        calculator = SolarCellCalculator(efficiency, area, tilt)
+        result = calculator.calculate_daily_production(ghi_daily, temperature)
+
+        daily_kwh = result['total_production'] / 1000
+        annual_kwh = daily_kwh * 365
+
+        emissions_factor = 0.4  # kg CO₂ per kWh
+        co2_saved_kg = annual_kwh * emissions_factor
+        trees_planted = co2_saved_kg / 21.77
+        cars_removed = co2_saved_kg / 4600
+
+        st.markdown(f"**Estimated Annual CO₂ Offset:** `{co2_saved_kg:,.0f} kg`")
+        st.markdown(f"- 🌳 Equivalent to planting **{trees_planted:.0f} trees/year**")
+        st.markdown(f"- 🚗 Equivalent to removing **{cars_removed:.2f} cars** from the road")
+
+
